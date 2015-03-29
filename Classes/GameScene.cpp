@@ -2,6 +2,8 @@
 
 USING_NS_CC;
 
+using STATUS = PuzzleField::STATUS;
+
 Scene* GameScene::createScene()
 {
     // 'scene' is an autorelease object
@@ -55,7 +57,7 @@ bool GameScene::initWindow(){
     
     Size mainWindowSize(550,1000);
     
-    _mainWindow = PuzzleFiled::create(mainWindowSize);
+    _mainWindow = PuzzleField::create(mainWindowSize);
  
         //drawPolygon(points data,point num,color,outline size,outline color)
     
@@ -72,7 +74,27 @@ void GameScene::onEnter(){
 
 
 void GameScene::progress(float frame){
-    _mainWindow->progress();
+    
+    switch (_mainWindow->getStatus()) {
+        case STATUS::PLAYING:
+            _mainWindow->progress();
+            break;
+        case STATUS::WAITING:
+            _mainWindow->pushNewPuto(static_cast<puto::TYPE>(_distribution(_engine)),
+                                     static_cast<puto::TYPE>(_distribution(_engine)));
+            break;
+        case STATUS::ACTING:
+            break;
+        case STATUS::LOSED:
+            //TODO:
+            break;
+        case STATUS::WON:
+            //TODO;
+            break;
+            
+        default:
+            break;
+    }
 }
 
 

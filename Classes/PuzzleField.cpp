@@ -1,21 +1,21 @@
 //
-//  PuzzleFiled.cpp
+//  PuzzleField.cpp
 //  putoputo
 //
 //  Created by Riya.Liel on 2015/03/27.
 //
 //
 
-#include "PuzzleFiled.h"
+#include "PuzzleField.h"
 
 USING_NS_CC;
 
-PuzzleFiled::PuzzleFiled() : _mainPuto(this){
+PuzzleField::PuzzleField() : _mainPuto(this){
     
 }
 
-PuzzleFiled* PuzzleFiled::create(Size window_size){
-    PuzzleFiled* pRef = new PuzzleFiled;
+PuzzleField* PuzzleField::create(Size window_size){
+    PuzzleField* pRef = new PuzzleField;
     if(pRef && pRef->init(window_size)){
         pRef->autorelease();
     }
@@ -26,14 +26,16 @@ PuzzleFiled* PuzzleFiled::create(Size window_size){
     return pRef;
 }
 
-bool PuzzleFiled::init(Size window_size){
+bool PuzzleField::init(Size window_size){
     if(!DrawNode::init())return false;
     
-    std::vector<Vec2> vecs={Vec2(window_size),Vec2(0,window_size.height),Vec2(0,0),Vec2(window_size.width,0)};
+    Vec2 vecs[]={Vec2(window_size),Vec2(0,window_size.height),Vec2(0,0),Vec2(window_size.width,0)};
     const int SQUARE_POINT_NUM=4;
     
-    _mainWindow->drawPolygon(&vecs[0], SQUARE_POINT_NUM, Color4F(.5f, .6f, 1.0f, 1.0f), 5, Color4F::BLACK);
-    _mainWindow->setOpacity(128);
+    _window_size = window_size;
+    
+    drawPolygon(&vecs[0], SQUARE_POINT_NUM, Color4F(.5f, .6f, 1.0f, 1.0f), 5, Color4F::BLACK);
+    setOpacity(128);
     
     _status = STATUS::WAITING;
     
@@ -45,14 +47,14 @@ bool PuzzleFiled::init(Size window_size){
 }
 
 
-bool PuzzleFiled::onTouchBegan(cocos2d::Touch* touch,cocos2d::Event* unused_event){
+bool PuzzleField::onTouchBegan(cocos2d::Touch* touch,cocos2d::Event* unused_event){
     _stdPos = touch->getLocation();
     SWIPE_PARAM = VECTOR::NONE;
     
     return true;
 }
 
-void PuzzleFiled::onTouchMoved(cocos2d::Touch* touch,cocos2d::Event* unused_event){
+void PuzzleField::onTouchMoved(cocos2d::Touch* touch,cocos2d::Event* unused_event){
     Vec2 pos = touch->getLocation();
     
     if(SWIPE_PARAM == VECTOR::NONE && (_stdPos.x - pos.x) > 50){
@@ -69,7 +71,7 @@ void PuzzleFiled::onTouchMoved(cocos2d::Touch* touch,cocos2d::Event* unused_even
     _oldLocation = pos;
     
 }
-void PuzzleFiled::onTouchEnded(cocos2d::Touch* touch,cocos2d::Event* unused_event){
+void PuzzleField::onTouchEnded(cocos2d::Touch* touch,cocos2d::Event* unused_event){
     if(SWIPE_PARAM == VECTOR::RIGHT){
         _mainPuto.rotateRight();
     }
@@ -77,25 +79,28 @@ void PuzzleFiled::onTouchEnded(cocos2d::Touch* touch,cocos2d::Event* unused_even
         _mainPuto.rotateLeft();
     }
 }
-void PuzzleFiled::onTouchCancelled(cocos2d::Touch* touch,cocos2d::Event* unused_event){
+void PuzzleField::onTouchCancelled(cocos2d::Touch* touch,cocos2d::Event* unused_event){
     onTouchEnded(touch, unused_event);
 }
 
-puto* PuzzleFiled::getPutoMapCell(PosIndex index){
-    CC_ASSERT(index.x < WIDTH_PUTO_NUM && index.y < HEIGHT_PUTO_NUM && index.x >=0 && index.y >=0);
+puto* PuzzleField::getPutoMapCell(PosIndex index){
+    CC_ASSERT(index.x < WIDTH_PUTO_NUM && index.x >=0 && index.y >=0);
+    if(index.y >= HEIGHT_PUTO_NUM){
+        return nullptr;
+    }
     return _putoMap[index.y][index.x];
 }
 
-PosIndex PuzzleFiled::convertPosIndex(Vec2 pos){
+PosIndex PuzzleField::convertPosIndex(Vec2 pos){
     PosIndex index;
     
-    index.x = pos.x / (DESIGN_SIZE.width/WIDTH_PUTO_NUM);
-    index.y = pos.y / (DESIGN_SIZE.height/HEIGHT_PUTO_NUM);
+    index.x = pos.x / (_window_size.width/WIDTH_PUTO_NUM);
+    index.y = pos.y / (_window_size.height/HEIGHT_PUTO_NUM);
     
     return index;
 }
 
-void PuzzleFiled::fallPuto(puto* target){
+void PuzzleField::fallPuto(puto* target){
     PosIndex index = convertPosIndex(target->getPosition());
     _status = STATUS::ACTING;
     
@@ -108,7 +113,11 @@ void PuzzleFiled::fallPuto(puto* target){
     
 }
 
-void PuzzleFiled::progressWithMovement(int movement){
+void PuzzleField::progress(){
+    progressWithMovement(_movement);
+}
+
+void PuzzleField::progressWithMovement(int movement){
     PosIndex originIndex = convertPosIndex(_mainPuto.getOriginPuto()->getPosition());
     PosIndex optIndex = convertPosIndex(_mainPuto.getOptionalPuto()->getPosition());
     
@@ -125,7 +134,7 @@ void PuzzleFiled::progressWithMovement(int movement){
     }
 }
 
-void PuzzleFiled::pushNewPuto(puto::TYPE origin_type,puto::TYPE opt_type){
+void PuzzleField::pushNewPuto(puto::TYPE origin_type,puto::TYPE opt_type){
     _mainPuto.newPuto(origin_type,opt_type);
     
     _status = STATUS::PLAYING;

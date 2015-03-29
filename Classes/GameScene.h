@@ -3,7 +3,7 @@
 
 #include "cocos2d.h"
 #include "puto.h"
-#include "PuzzleFiled.h"
+#include "PuzzleField.h"
 #include "Structure.h"
 
 class GameScene : public cocos2d::LayerColor
@@ -27,7 +27,7 @@ protected:
     GameScene() = default;
     virtual ~GameScene() = default;
 
-    PuzzleFiled* _mainWindow;
+    PuzzleField* _mainWindow;
     
     bool initWindow();
     

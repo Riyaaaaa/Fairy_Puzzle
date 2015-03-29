@@ -37,8 +37,8 @@ public:
     CC_SYNTHESIZE_READONLY(puto*, _origin, originPuto);
     CC_SYNTHESIZE_READONLY(puto*, _opt, optionalPuto);
     
-    puto* getOriginPuto  ();
-    puto* getOptionalPuto();
+    puto* getOriginPuto  (){return _origin;};
+    puto* getOptionalPuto(){return _opt;};
     
     bool newPuto(puto::TYPE,puto::TYPE);
     
