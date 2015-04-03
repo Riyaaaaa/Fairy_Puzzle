@@ -16,21 +16,26 @@
 
 class PuzzleField : public cocos2d::DrawNode{
 public:
-    void pushNewPuto(puto::TYPE,puto::TYPE); //basically, plz call while _status is WAITING. this set instance to  _mainPuto
-    void progress(); //game progress
-    void progressWithMovement(int); //fall processing
+    void pushNewPuto(puto::TYPE,puto::TYPE);    //basically, plz call while _status is WAITING. this set instance to  _mainPuto
+    void progress();                            //game progress
+    void progressWithMovement(int);             //fall processing
     
     virtual bool init(cocos2d::Size); //initialize by window size
     static PuzzleField* create(cocos2d::Size);
     
-    puto* getPutoMapCell(PosIndex);
+    bool isPutoContain(puto*);
     
-    enum class STATUS{ //express status of game
-        WAITING=0, //_mainPuto is null
-        PLAYING, //in progress
-        ACTING, //while animation,or gravity processing
-        LOSED, //game ended
-        WON, //game ended
+    puto* getPutoMapCell(PosIndex);
+    void setPutoPosIndex(puto*,PosIndex);
+    
+    void rotate(VECTOR);
+    
+    enum class STATUS{  //express status of game
+        WAITING=0,      //_mainPuto is null
+        PLAYING,        //in progress
+        ACTING,         //while animation,or gravity processing
+        LOSED,          //game ended
+        WON,            //game ended
     };
     
     CC_SYNTHESIZE_READONLY(STATUS, _status, Status); //status of game

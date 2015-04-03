@@ -38,14 +38,6 @@ bool GameScene::init()
     _engine =std::mt19937(rnd());
     _distribution=std::uniform_int_distribution<>(1,5);
     
-    auto touchListner = EventListenerTouchOneByOne::create();
-    touchListner->setSwallowTouches(true);
-    touchListner->onTouchBegan = CC_CALLBACK_2(GameScene::onTouchBegan,this);
-    touchListner->onTouchMoved = CC_CALLBACK_2(GameScene::onTouchMoved,this);
-    touchListner->onTouchEnded = CC_CALLBACK_2(GameScene::onTouchEnded,this);
-    touchListner->onTouchCancelled = CC_CALLBACK_2(GameScene::onTouchCancelled,this);
-    _eventDispatcher->addEventListenerWithSceneGraphPriority(touchListner, this);
-    
     schedule(schedule_selector(GameScene::progress),_progressDelay);
     
     return true;

@@ -26,11 +26,18 @@ public:
     
     virtual bool init(TYPE type);
     static puto* create(TYPE type);
+    static puto* create();
+    
+    static TYPE getRandom();
+    static void rndInit();
     
     void setPosIndex(PosIndex);
 private:
     TYPE _type;
     PosIndex _index;
+    
+    static std::mt19937 _engine;
+    static std::uniform_int_distribution<> _distribution;
 };
 
 #endif /* defined(__putoputo__puto__) */

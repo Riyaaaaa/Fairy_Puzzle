@@ -40,7 +40,7 @@ protected:
     std::mt19937 _engine;
     std::uniform_int_distribution<> _distribution;
     
-    int _progressDelay= 1;
+    int _progressDelay= 1.0f;
     
     const int TAG_ORIGIN=0,TAG_OPT=1;
     

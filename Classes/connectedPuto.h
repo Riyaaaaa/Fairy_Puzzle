@@ -12,10 +12,12 @@
 #include "puto.h"
 #include "Structure.h"
 
+
 class connectedPuto{
 public:
     connectedPuto(cocos2d::Node*);
     
+    void rotate(VECTOR);
     void rotateRight();
     void rotateLeft ();
     
@@ -36,6 +38,9 @@ public:
     
     CC_SYNTHESIZE_READONLY(puto*, _origin, originPuto);
     CC_SYNTHESIZE_READONLY(puto*, _opt, optionalPuto);
+
+    CC_SYNTHESIZE_READONLY(VECTOR, OPT_POSITION, OptPos);
+    CC_SYNTHESIZE_READONLY(cocos2d::Size, _puto_size, PutoSize);
     
     puto* getOriginPuto  (){return _origin;};
     puto* getOptionalPuto(){return _opt;};
@@ -50,8 +55,6 @@ private:
     cocos2d::Node* _owner;
     
     bool _semaphore=true;
-    
-    VECTOR OPT_POSITION;
     
     const int TAG_ORIGIN=100,TAG_OPT=101;
 };
