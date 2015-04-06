@@ -13,7 +13,6 @@ USING_NS_CC;
 connectedPuto::connectedPuto(cocos2d::Node* owner){
     _owner = owner;
     
-    CCLOG("%f",_owner->getContentSize().width);
 }
 
 void connectedPuto::progress(int movement){
@@ -79,7 +78,6 @@ void connectedPuto::rotateRight(){
         
     _opt->runAction(Sequence::create(action_arr));
     
-    CCLOG("rotate right");
 }
 
 void connectedPuto::rotateLeft (){
@@ -119,13 +117,13 @@ void connectedPuto::rotateLeft (){
     
     _opt->runAction(Sequence::create(action_arr));
 
-    CCLOG("rotate left");
 }
 
 void connectedPuto::rotate(VECTOR N){
     int radius = _origin->getContentSize().width;
     double rad;
     Vec2 originPos = _origin->getPosition();
+    
     switch (OPT_POSITION) {
         case VECTOR::UP:
             rad = PI/2;
@@ -158,7 +156,7 @@ void connectedPuto::rotate(VECTOR N){
         action_arr.pushBack(CallFuncN::create([=](Node* node){
             node->setPosition(_origin->getPosition() + radius * Vec2(cos(rad),sin(rad)));
         }));
-        action_arr.pushBack(DelayTime::create(0.1f));
+        action_arr.pushBack(DelayTime::create(0.03f));
     }
     action_arr.pushBack(CallFunc::create(CC_CALLBACK_0(connectedPuto::releaceSemaphore, this)));
     

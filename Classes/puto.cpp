@@ -27,11 +27,11 @@ puto* puto::create(TYPE type){
 
 bool puto::init(TYPE type){
     Size design_size = Director::getInstance()->getOpenGLView()->getDesignResolutionSize();
-    std::string filePath("puto");
+    std::string filePath("drop");
     filePath += std::to_string(static_cast<int>(type)) += ".png";
     if(!Sprite::initWithFile(filePath))return false;
     
-    setAnchorPoint(Vec2(0.5f,0.0f));
+    setAnchorPoint(Vec2(0.0f,0.0f));
     
     _type = type;
     return true;

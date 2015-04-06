@@ -55,6 +55,7 @@ protected:
     virtual void onTouchCancelled(cocos2d::Touch* touch,cocos2d::Event* unused_event);
     
     void fallPuto(puto*); //gravity processing (after set origin or optional puto)
+    void patchGravity();
     
     int _movement     =-20; //movement of puto per frame
     
@@ -65,6 +66,8 @@ protected:
     /* member variable to swipe processing */
     cocos2d::Vec2 _oldLocation,_stdPos;
     VECTOR SWIPE_PARAM;
+    
+    void removePuto();
 
 };
 

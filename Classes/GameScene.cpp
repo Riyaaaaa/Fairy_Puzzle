@@ -49,11 +49,17 @@ bool GameScene::initWindow(){
     
     Size mainWindowSize(550,1000);
     
+    Sprite* player = Sprite::create("Alice.png");
     _mainWindow = PuzzleField::create(mainWindowSize);
+    _mainWindow->setOpacity(0.0);
  
         //drawPolygon(points data,point num,color,outline size,outline color)
     
-    addChild(_mainWindow,WINDOW);
+    player->setAnchorPoint(Vec2(0,0));
+    player->setPosition(Vec2(0,0));
+    
+    player->addChild(_mainWindow,WINDOW);
+    addChild(player);
     
     return true;
 }

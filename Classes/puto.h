@@ -32,8 +32,9 @@ public:
     static void rndInit();
     
     void setPosIndex(PosIndex);
+    
+    CC_SYNTHESIZE_READONLY(TYPE, _type, Type);
 private:
-    TYPE _type;
     PosIndex _index;
     
     static std::mt19937 _engine;
