@@ -90,17 +90,15 @@ void PuzzleField::onTouchEnded(cocos2d::Touch* touch,cocos2d::Event* unused_even
     
     if(SWIPE_PARAM == VECTOR::RIGHT){
         if(fabs(_stdPos.y - pos.y) < 50){
-            if(convertPosIndex(_mainPuto.getOptionalPuto()->getPosition()).x != WIDTH_PUTO_NUM-1 &&
-               convertPosIndex(_mainPuto.getOriginPuto()->getPosition()).x != WIDTH_PUTO_NUM-1)
+            if(isCanMove(_mainPuto,VECTOR::RIGHT))
                 _mainPuto.moveDelta(Vec2(_window_size.width/WIDTH_PUTO_NUM,0));
         }
         else rotate(VECTOR::RIGHT);
     }
     else if(SWIPE_PARAM == VECTOR::LEFT){
         if(fabs(_stdPos.y - pos.y) < 50){
-            if(convertPosIndex(_mainPuto.getOptionalPuto()->getPosition()).x != 0 &&
-               convertPosIndex(_mainPuto.getOriginPuto()->getPosition()).x != 0)
-            _mainPuto.moveDelta(Vec2(-1*_window_size.width/WIDTH_PUTO_NUM,0));
+            if(isCanMove(_mainPuto, VECTOR::LEFT))
+                _mainPuto.moveDelta(Vec2(-1*_window_size.width/WIDTH_PUTO_NUM,0));
         }
         else rotate(VECTOR::LEFT);
     }
@@ -255,13 +253,13 @@ void PuzzleField::rotate(VECTOR N){
         _mainPuto.moveDelta(Vec2(0,_mainPuto.getOptionalPuto()->getContentSize().height));
     }
     else if(_opt_pos == VECTOR::LEFT && (index.x == 0 || (getPutoMapCell(PosIndex(index.x-1,index.y))!=nullptr))){
-        if(getPutoMapCell(PosIndex(index.x+1,index.y)) == nullptr){
+        if(index.x != WIDTH_PUTO_NUM-1 && getPutoMapCell(PosIndex(index.x+1,index.y)) == nullptr){
             _mainPuto.moveDelta(Vec2(_mainPuto.getOptionalPuto()->getContentSize().width,0));
         }
         else rotate(N);
     }
     else if(_opt_pos == VECTOR::RIGHT && (index.x == WIDTH_PUTO_NUM-1 || getPutoMapCell(PosIndex(index.x+1,index.y))!=nullptr)){
-        if(getPutoMapCell(PosIndex(index.x-1,index.y)) == nullptr){
+        if(index.x != 0 && getPutoMapCell(PosIndex(index.x-1,index.y)) == nullptr){
             _mainPuto.moveDelta(Vec2(-1*_mainPuto.getOptionalPuto()->getContentSize().width,0));
         }
         else rotate(N);
@@ -289,33 +287,46 @@ void PuzzleField::removePuto(){
             if(_putoMap[i][j] != nullptr){
                 target_type = _putoMap[i][j]->getType();
                 if(j!=0 && _putoMap[i][j-1] != nullptr && target_type == _putoMap[i][j-1]->getType()){
-                    removeList[removeMap[i][j-1]].push_back(&_putoMap[i][j]);
-                    removeMap[i][j]=removeMap[i][j-1];
-                    continue;
+                    //removeList[removeMap[i][j-1]].push_back(&_putoMap[i][j]);
+                    if(removeMap[i][j-1]!=-1){
+                        removeMap[i][j]=removeMap[i][j-1];
+                    }
                 }
                 if(i!=0 && _putoMap[i-1][j] != nullptr && target_type == _putoMap[i-1][j]->getType()){
-                    removeList[removeMap[i-1][j]].push_back(&_putoMap[i][j]);
-                    removeMap[i][j]=removeMap[i-1][j];
-                    continue;
+                    //removeList[removeMap[i-1][j]].push_back(&_putoMap[i][j]);
+                    if(removeMap[i-1][j]!=-1){
+                        removeMap[i][j]=removeMap[i-1][j];
+                    }
                 }
-                /*
                 if(j!=WIDTH_PUTO_NUM-1 && _putoMap[i][j+1] != nullptr && target_type == _putoMap[i][j+1]->getType()){
-                    removeList[removeMap[i][j+1]].push_back(&_putoMap[i][j]);
-                    removeMap[i][j]=removeMap[i][j+1];
-                    continue;
+                    //removeList[removeMap[i][j+1]].push_back(&_putoMap[i][j]);
+                    if(removeMap[i][j+1]!=-1){
+                        removeMap[i][j]=removeMap[i][j+1];
+                    }
                 }
                 if(i!=HEIGHT_PUTO_NUM-1 && _putoMap[i+1][j] != nullptr && target_type == _putoMap[i+1][j]->getType()){
-                    removeList[removeMap[i+1][j]].push_back(&_putoMap[i][j]);
-                    removeMap[i][j]=removeMap[i+1][j];
-                    continue;
+                    //removeList[removeMap[i+1][j]].push_back(&_putoMap[i][j]);
+                    if(removeMap[i+1][j]!=-1){
+                        removeMap[i][j]=removeMap[i+1][j];
+                    }
                 }
-                */
+                
                 if(removeMap[i][j]==-1){
                     removeMap[i][j] = removeNo;
-                    removeList.push_back(std::vector<puto**>{&_putoMap[i][j]});
+                    //removeList.push_back(std::vector<puto**>{&_putoMap[i][j]});
                     removeNo++;
                     continue;
                 }
+            }
+        }
+    }
+    
+    removeList.resize(removeNo+1);
+    
+    for(int i=0;i<HEIGHT_PUTO_NUM-1;i++){
+        for(int j=0;j<WIDTH_PUTO_NUM-1;j++){
+            if(removeMap[i][j] != -1){
+                removeList[removeMap[i][j]].push_back(&_putoMap[i][j]);
             }
         }
     }
@@ -340,4 +351,61 @@ void PuzzleField::removePuto(){
         }
     }
     runAction(Sequence::create(delay,gravity,recursive,nullptr));
+}
+
+bool PuzzleField::isCanMove(connectedPuto& _puto, VECTOR N){
+    PosIndex origin_index = convertPosIndex(_puto.getOriginPuto()->getPosition());
+    PosIndex opt_index;
+    
+    puto* origin;
+    puto* opt;
+    
+    switch (_puto.getOptPos()) {
+        case VECTOR::UP:
+            opt_index = PosIndex(origin_index.x,origin_index.y+1);
+            break;
+        case VECTOR::RIGHT:
+            opt_index = PosIndex(origin_index.x+1,origin_index.y);
+            break;
+        case VECTOR::DOWN:
+            opt_index = PosIndex(origin_index.x,origin_index.y-1);
+            break;
+        case VECTOR::LEFT:
+            opt_index = PosIndex(origin_index.x-1,origin_index.y);
+            break;
+        default:
+            break;
+    }
+    
+    if(opt_index.x < 0 || opt_index.x >= WIDTH_PUTO_NUM || opt_index.y < 0 || opt_index.y >= HEIGHT_PUTO_NUM ){
+        return false;
+    }
+    
+    switch (N) {
+        case VECTOR::UP:
+            origin = getPutoMapCell(PosIndex(origin_index.x,origin_index.y+1));
+            opt = getPutoMapCell(PosIndex(opt_index.x,opt_index.y+1));
+            break;
+        case VECTOR::RIGHT:
+            origin = getPutoMapCell(PosIndex(origin_index.x+1,origin_index.y));
+            opt = getPutoMapCell(PosIndex(opt_index.x+1,opt_index.y));
+            break;
+        case VECTOR::DOWN:
+            origin = getPutoMapCell(PosIndex(origin_index.x,origin_index.y-1));
+            opt = getPutoMapCell(PosIndex(opt_index.x,opt_index.y-1));
+            break;
+        case VECTOR::LEFT:
+            origin = getPutoMapCell(PosIndex(origin_index.x-1,origin_index.y));
+            opt = getPutoMapCell(PosIndex(opt_index.x-1,opt_index.y));
+            break;
+        default:
+            break;
+
+    }
+    
+    if(!origin && !opt){
+        return true;
+    }
+    
+    return false;
 }

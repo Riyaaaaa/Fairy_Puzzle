@@ -22,9 +22,14 @@ enum class VECTOR{ //scoped enumeration
 };
 
 enum ZOrder{
-    WINDOW=0,
-    PUTO,
+    Z_WINDOW=0,
+    Z_PUTO,
     
+};
+
+enum tag{
+    NEXT_DROP=1000,
+    WINDOW=100,
 };
 
 struct PosIndex{

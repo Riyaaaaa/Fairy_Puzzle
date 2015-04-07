@@ -30,6 +30,9 @@ public:
     
     void rotate(VECTOR);
     
+    bool isCanMove(puto*,VECTOR);
+    bool isCanMove(connectedPuto&,VECTOR);
+    
     enum class STATUS{  //express status of game
         WAITING=0,      //_mainPuto is null
         PLAYING,        //in progress

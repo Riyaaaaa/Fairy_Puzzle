@@ -31,8 +31,8 @@ bool connectedPuto::newPuto(puto::TYPE originType,puto::TYPE optType){
     _origin->setScale(_puto_size.width / _origin->getContentSize().width);
     _opt->setScale(_puto_size.width / _opt->getContentSize().width);
     
-    _owner->addChild(_origin,PUTO,TAG_ORIGIN);
-    _owner->addChild(_opt,PUTO,TAG_OPT);
+    _owner->addChild(_origin,Z_PUTO,TAG_ORIGIN);
+    _owner->addChild(_opt,Z_PUTO,TAG_OPT);
     
     OPT_POSITION = VECTOR::UP;
 }

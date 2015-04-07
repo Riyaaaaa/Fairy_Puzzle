@@ -32,11 +32,12 @@ bool GameScene::init()
     visibleSize = Director::getInstance()->getVisibleSize();
     origin = Director::getInstance()->getVisibleOrigin();
     
-    initWindow();
-    
     std::random_device rnd;
     _engine =std::mt19937(rnd());
     _distribution=std::uniform_int_distribution<>(1,5);
+    
+    initWindow();
+    initPutoList();
     
     schedule(schedule_selector(GameScene::progress),_progressDelay);
     
@@ -60,6 +61,21 @@ bool GameScene::initWindow(){
     
     player->addChild(_mainWindow,WINDOW);
     addChild(player);
+    
+    return true;
+}
+
+bool GameScene::initPutoList(){
+    int _type;
+    
+    for(int i=0;i<HEIGHT_PUTO_NUM;i++){
+        _type = _distribution(_engine);
+        next_puto_list.push_back(std::pair<Sprite*,puto::TYPE>(Sprite::create("drop" + std::to_string(_type) + ".png"),
+                                                               static_cast<puto::TYPE>(_type)));
+        next_puto_list.back().first->setScale(90 / next_puto_list.back().first->getContentSize().width);
+        next_puto_list.back().first->setPosition(Vec2(605,90*i +45));
+        addChild(next_puto_list.back().first,NEXT_DROP+i);
+    }
     
     return true;
 }
