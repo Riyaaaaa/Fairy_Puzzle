@@ -33,6 +33,7 @@ public:
     
     void setPosIndex(PosIndex);
     
+    CC_SYNTHESIZE(int, _removeNo, RemoveNo);
     CC_SYNTHESIZE_READONLY(TYPE, _type, Type);
 private:
     PosIndex _index;

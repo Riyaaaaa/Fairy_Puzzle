@@ -14,9 +14,9 @@ PuzzleField::PuzzleField() : _mainPuto(this){
     
 }
 
-PuzzleField* PuzzleField::create(Size window_size){
+PuzzleField* PuzzleField::create(Size window_size,std::array<puto::TYPE,HEIGHT_PUTO_NUM> typeList){
     PuzzleField* pRef = new PuzzleField;
-    if(pRef && pRef->init(window_size)){
+    if(pRef && pRef->init(window_size,typeList)){
         pRef->autorelease();
     }
     else{
@@ -26,7 +26,7 @@ PuzzleField* PuzzleField::create(Size window_size){
     return pRef;
 }
 
-bool PuzzleField::init(Size window_size){
+bool PuzzleField::init(Size window_size,std::array<puto::TYPE,HEIGHT_PUTO_NUM> typeList){
     if(!DrawNode::init())return false;
     
     Vec2 vecs[]={Vec2(window_size),Vec2(0,window_size.height),Vec2(0,0),Vec2(window_size.width,0)};
@@ -34,13 +34,13 @@ bool PuzzleField::init(Size window_size){
     
     _window_size = window_size;
     
-    setContentSize(_window_size);
+    drawPolygon(&vecs[0], SQUARE_POINT_NUM, Color4F(.5f, .6f, 1.0f, 0.5f), 1, Color4F::BLACK);
     
-    drawPolygon(&vecs[0], SQUARE_POINT_NUM, Color4F(.5f, .6f, 1.0f, 0.5f), 5, Color4F::BLACK);
-    
-    setOpacity(128);
+    setContentSize(Size(640,_window_size.height));
     
     _status = STATUS::WAITING;
+    
+    initPutoList(typeList);
     
     for(auto &cell: _putoMap){
         cell.fill(nullptr);
@@ -54,10 +54,24 @@ bool PuzzleField::init(Size window_size){
     touchListner->onTouchCancelled = CC_CALLBACK_2(PuzzleField::onTouchCancelled,this);
     _eventDispatcher->addEventListenerWithSceneGraphPriority(touchListner, this);
     
+    _eventDispatcher->setEnabled(false);
+    
     
     return true;
 }
 
+bool PuzzleField::initPutoList(std::array<puto::TYPE,HEIGHT_PUTO_NUM> typeList){
+    next_puto_list.resize(HEIGHT_PUTO_NUM);
+    
+    for(int i=HEIGHT_PUTO_NUM;i>0;i--){
+        next_puto_list[HEIGHT_PUTO_NUM - i] = createPuto(typeList[HEIGHT_PUTO_NUM - i]);
+        next_puto_list[HEIGHT_PUTO_NUM - i]->setPosition(Vec2(getContentSize().width-getPutoSize().width
+                                                              ,getPutoSize().height*(i-1)));
+        addChild(next_puto_list[HEIGHT_PUTO_NUM - i],NEXT_DROP+i);
+    }
+    
+    return true;
+}
 
 bool PuzzleField::onTouchBegan(cocos2d::Touch* touch,cocos2d::Event* unused_event){
     _stdPos = touch->getLocation();
@@ -107,8 +121,47 @@ void PuzzleField::onTouchCancelled(cocos2d::Touch* touch,cocos2d::Event* unused_
     onTouchEnded(touch, unused_event);
 }
 
+void PuzzleField::popPuto(){
+    auto move_up = MoveBy::create(0.5f, Vec2(0,getPutoSize().height));
+    auto move_left = MoveBy::create(0.5f, Vec2(-getPutoSize().width,0));
+    auto move_down = MoveBy::create(0.5f, Vec2(0,-getPutoSize().height));
+    
+    _status = STATUS::ACTING;
+    
+    next_puto_list[0]->runAction(Sequence::create(move_left,move_down,nullptr));
+    next_puto_list[1]->runAction(Sequence::create(move_up,move_left->clone(),nullptr));
+    
+    _mainPuto.initPuto(next_puto_list[0], next_puto_list[1]);
+    
+    next_puto_list.pop_front();
+    next_puto_list.pop_front();
+}
+
+void PuzzleField::pushPuto(puto::TYPE origin_type,puto::TYPE opt_type){
+    auto move_up = MoveBy::create(1.0f, Vec2(0,getPutoSize().height*2));
+    
+    popPuto();
+    
+    next_puto_list.push_back(createPuto(origin_type));
+    next_puto_list.back()->setPosition(Vec2(getContentSize().width-getPutoSize().width
+                                            ,getPutoSize().height*(-1)));
+    addChild(next_puto_list.back());
+    
+    next_puto_list.push_back(createPuto(opt_type));
+    next_puto_list.back()->setPosition(Vec2(getContentSize().width-getPutoSize().width
+                                            ,getPutoSize().height*(-2)));
+    
+    addChild(next_puto_list.back());
+    
+    for(int i=0;i<HEIGHT_PUTO_NUM;i++){
+        next_puto_list[i]->runAction(move_up->clone());
+    }
+    //next_puto_list.back()->runAction(MoveBy::create(1.0f, Vec2(0,getPutoSize().height)));
+    runAction(Sequence::create(DelayTime::create(1.0f),CallFunc::create([&](){_status = STATUS::PLAYING; _eventDispatcher->setEnabled(true);}),nullptr));
+}
+
 puto* PuzzleField::getPutoMapCell(PosIndex index){
-    CC_ASSERT(index.x < WIDTH_PUTO_NUM && index.x >=0 && index.y >=0);
+    if(index.x >= WIDTH_PUTO_NUM || index.x < 0 || index.y < 0 )throw nullptr;
     if(index.y >= HEIGHT_PUTO_NUM){
         return nullptr;
     }
@@ -118,7 +171,7 @@ puto* PuzzleField::getPutoMapCell(PosIndex index){
 PosIndex PuzzleField::convertPosIndex(Vec2 pos){
     PosIndex index;
     
-    index.x = (pos.x+1) / (_window_size.width/WIDTH_PUTO_NUM);
+    index.x = (pos.x+getPutoSize().width/2) / (_window_size.width/WIDTH_PUTO_NUM);
     index.y = pos.y / (_window_size.height/HEIGHT_PUTO_NUM);
     
     if(pos.y - _mainPuto.getOriginPuto()->getContentSize().height/2 < 0) {index.y = -1;}
@@ -139,6 +192,12 @@ void PuzzleField::fallPuto(puto* target){
     }
     
     removePuto();
+    if(!isLive()){
+        _status = STATUS::LOSED;
+        _eventDispatcher->setEnabled(false);
+        std::vector<Vec2> vecs({Vec2(getContentSize()),Vec2(0,getContentSize().height),Vec2(0,0),Vec2(getContentSize().width,0)});
+        drawPolygon(&vecs[0], 4, Color4F(.0f, .0f, .0f, 0.5f), 0, Color4F::BLACK);
+    }
 }
 
 void PuzzleField::patchGravity(){
@@ -173,10 +232,8 @@ void PuzzleField::progress(){
 }
 
 void PuzzleField::progressWithMovement(int movement){
-    PosIndex originIndex = convertPosIndex(_mainPuto.getOriginPuto()->getPosition());
-    PosIndex optIndex = convertPosIndex(_mainPuto.getOptionalPuto()->getPosition());
-    
-    _mainPuto.moveDelta(Vec2(0,movement));
+    PosIndex originIndex = convertPosIndex(_mainPuto.getOriginPuto()->getPosition() + Vec2(0,movement));
+    PosIndex optIndex = convertPosIndex(_mainPuto.getOptionalPuto()->getPosition() + Vec2(0,movement));
     
     //if(_mainPuto.isCanAccess()){
     if(originIndex.y < 0 || getPutoMapCell(originIndex) != nullptr){
@@ -187,64 +244,28 @@ void PuzzleField::progressWithMovement(int movement){
         setPutoPosIndex(_mainPuto.getOptionalPuto(), optIndex+PosIndex(0,1));
         fallPuto(_mainPuto.getOriginPuto());
     }
-    else return;
+    else {
+        _mainPuto.moveDelta(Vec2(0,movement));
+        return;
+    }
     //}
     _eventDispatcher->setEnabled(false);
 }
 
-void PuzzleField::pushNewPuto(puto::TYPE origin_type,puto::TYPE opt_type){
-    _mainPuto.newPuto(origin_type,opt_type);
+puto* PuzzleField::createPuto(puto::TYPE type){
     
-    puto* origin = _mainPuto.getOriginPuto();
-    puto* opt = _mainPuto.getOptionalPuto();
+    puto* new_puto = puto::create(type);
+    new_puto->setScale((_window_size.width/WIDTH_PUTO_NUM) / new_puto->getContentSize().width,
+                       (_window_size.height/HEIGHT_PUTO_NUM) / new_puto->getContentSize().height);
     
-    origin->setScale((_window_size.width/WIDTH_PUTO_NUM) / origin->getContentSize().width,
-                     (_window_size.height/HEIGHT_PUTO_NUM) / origin->getContentSize().height);
-    opt->setScale((_window_size.width/WIDTH_PUTO_NUM) / opt->getContentSize().width,
-                     (_window_size.height/HEIGHT_PUTO_NUM) / opt->getContentSize().height);
-
+    new_puto->setContentSize( Size(_window_size.width/WIDTH_PUTO_NUM,
+                                   _window_size.height/HEIGHT_PUTO_NUM) );
     
-    origin->setContentSize( Size(_window_size.width/WIDTH_PUTO_NUM,
-                           _window_size.height/HEIGHT_PUTO_NUM) );
-    opt->setContentSize( Size(_window_size.width/WIDTH_PUTO_NUM,
-                        _window_size.height/HEIGHT_PUTO_NUM) );
-    
-     CCLOG("%f %f",_window_size.width/WIDTH_PUTO_NUM,origin->getContentSize().width);
-    
-    origin->setPosition(Vec2(0 * _window_size.width/WIDTH_PUTO_NUM,
-                             5 * _window_size.height/HEIGHT_PUTO_NUM));
-    opt->setPosition(Vec2(0 * _window_size.width/WIDTH_PUTO_NUM,
-                          6 * _window_size.height/HEIGHT_PUTO_NUM));
-    
-    //origin->setPosition(Vec2(_window_size.width/2,_window_size.height));
-    //_mainPuto.getOptionalPuto()->setPosition(Vec2(_windowyuyu_size.width/2,_window_size.height + origin->getContentSize().height));
-    
-    _status = STATUS::PLAYING;
-    _eventDispatcher->setEnabled(true);
-    
-    /*
-     switch(type){
-     case puto::TYPE::RED:
-     break;
-     case puto::TYPE::GREEN:
-     break;
-     case puto::TYPE::BLUE:
-     break;
-     case puto::TYPE::YELLOW:
-     break;
-     case puto::TYPE::PURPLE:
-     break;
-     default:
-     break;
-     }
-     
-     */
-    
-    
+    return new_puto;
 }
 
 void PuzzleField::rotate(VECTOR N){
-
+    
     _mainPuto.rotate(N);
     PosIndex index = convertPosIndex(_mainPuto.getOriginPuto()->getPosition());
     VECTOR _opt_pos = _mainPuto.getOptPos();
@@ -268,75 +289,36 @@ void PuzzleField::rotate(VECTOR N){
 }
 
 void PuzzleField::removePuto(){
-    std::vector<std::vector<int>> removeMap;
-    std::vector<std::vector<puto**>> removeList;
-    puto::TYPE target_type;
-    
-    int removeNo=0;
-    
-    _status = STATUS::ACTING;
+    puto* subject;
+    std::vector<std::vector<bool>> removeMap;
+    std::vector<PosIndex> from_list;
+    std::vector<std::vector<PosIndex>> removeList;
     
     removeMap.resize(HEIGHT_PUTO_NUM);
-    for(auto &map: removeMap){
-        map.resize(WIDTH_PUTO_NUM);
-        std::fill(map.begin(),map.end(),-1);
+    for(auto &v: removeMap){
+        v.resize(WIDTH_PUTO_NUM);
+        std::fill(v.begin(),v.end(),false);
     }
     
-    for(int i=0;i<HEIGHT_PUTO_NUM-1;i++){
-        for(int j=0;j<WIDTH_PUTO_NUM-1;j++){
-            if(_putoMap[i][j] != nullptr){
-                target_type = _putoMap[i][j]->getType();
-                if(j!=0 && _putoMap[i][j-1] != nullptr && target_type == _putoMap[i][j-1]->getType()){
-                    //removeList[removeMap[i][j-1]].push_back(&_putoMap[i][j]);
-                    if(removeMap[i][j-1]!=-1){
-                        removeMap[i][j]=removeMap[i][j-1];
-                    }
+    for(int i=0;i<HEIGHT_PUTO_NUM;i++){
+        for(int j=0;j<WIDTH_PUTO_NUM;j++){
+            from_list.clear();
+            if(!removeMap[i][j]){
+                subject = _putoMap[i][j];
+                if(!subject)continue;
+                from_list.push_back(PosIndex(j,i));
+                recursive_search(PosIndex(j,i), subject->getType() , from_list);
+                for(auto& index: from_list){
+                    removeMap[index.y][index.x] = true;
                 }
-                if(i!=0 && _putoMap[i-1][j] != nullptr && target_type == _putoMap[i-1][j]->getType()){
-                    //removeList[removeMap[i-1][j]].push_back(&_putoMap[i][j]);
-                    if(removeMap[i-1][j]!=-1){
-                        removeMap[i][j]=removeMap[i-1][j];
-                    }
-                }
-                if(j!=WIDTH_PUTO_NUM-1 && _putoMap[i][j+1] != nullptr && target_type == _putoMap[i][j+1]->getType()){
-                    //removeList[removeMap[i][j+1]].push_back(&_putoMap[i][j]);
-                    if(removeMap[i][j+1]!=-1){
-                        removeMap[i][j]=removeMap[i][j+1];
-                    }
-                }
-                if(i!=HEIGHT_PUTO_NUM-1 && _putoMap[i+1][j] != nullptr && target_type == _putoMap[i+1][j]->getType()){
-                    //removeList[removeMap[i+1][j]].push_back(&_putoMap[i][j]);
-                    if(removeMap[i+1][j]!=-1){
-                        removeMap[i][j]=removeMap[i+1][j];
-                    }
-                }
-                
-                if(removeMap[i][j]==-1){
-                    removeMap[i][j] = removeNo;
-                    //removeList.push_back(std::vector<puto**>{&_putoMap[i][j]});
-                    removeNo++;
-                    continue;
-                }
+                if(from_list.size() > 3)removeList.push_back(from_list);
             }
         }
     }
     
-    removeList.resize(removeNo+1);
+    if(removeList.size() == 0)return;
     
-    for(int i=0;i<HEIGHT_PUTO_NUM-1;i++){
-        for(int j=0;j<WIDTH_PUTO_NUM-1;j++){
-            if(removeMap[i][j] != -1){
-                removeList[removeMap[i][j]].push_back(&_putoMap[i][j]);
-            }
-        }
-    }
-    
-    removeList.erase(std::remove_if(removeList.begin(),removeList.end(),[](std::vector<puto**> v){return v.size() < 4;}),removeList.end());
-    
-    if(removeList.size()==0){
-        _status = STATUS::WAITING;
-        return;
-    }
+    //removeList.erase(std::remove_if(removeList.begin(),removeList.end(),[](std::vector<PosIndex> v){return v.size()<4;}),removeList.end());
     
     auto fade = FadeTo::create(0.5f, 0.0f);
     auto remove = RemoveSelf::create();
@@ -344,21 +326,48 @@ void PuzzleField::removePuto(){
     auto gravity = CallFunc::create(CC_CALLBACK_0(PuzzleField::patchGravity, this));
     auto delay = DelayTime::create(0.5f);
     
-    for(auto list: removeList){
-        for(auto& _puto: list){
-            (*_puto)->runAction(Sequence::create(fade->clone(),remove->clone(), nullptr));
-            *_puto=nullptr;
+    for(auto &list: removeList){
+        for(auto& index: list){
+            _putoMap[index.y][index.x]->runAction(Sequence::create(fade->clone(),remove->clone(),NULL));
+            _putoMap[index.y][index.x] = nullptr;
         }
     }
     runAction(Sequence::create(delay,gravity,recursive,nullptr));
+}
+
+void PuzzleField::recursive_search(PosIndex pos,puto::TYPE type,std::vector<PosIndex>& destination){
+    std::vector<PosIndex> remove_list,from_list;
+    
+    
+    if(pos.y != HEIGHT_PUTO_NUM-1 && _putoMap[pos.y+1][pos.x] && type == _putoMap[pos.y+1][pos.x]->getType()){
+        remove_list.push_back(PosIndex(pos.x,pos.y+1));
+    }
+    if(pos.x != WIDTH_PUTO_NUM-1 && _putoMap[pos.y][pos.x+1] && type == _putoMap[pos.y][pos.x+1]->getType()){
+        remove_list.push_back(PosIndex(pos.x+1,pos.y));
+    }
+    if(pos.y != 0 && _putoMap[pos.y-1][pos.x] && type == _putoMap[pos.y-1][pos.x]->getType()){
+        remove_list.push_back(PosIndex(pos.x,pos.y-1));
+    }
+    if(pos.x != 0 && _putoMap[pos.y][pos.x-1] && type == _putoMap[pos.y][pos.x-1]->getType()) {
+        remove_list.push_back(PosIndex(pos.x-1,pos.y));
+    }
+    
+    for(auto &index: remove_list){
+        if(destination.end() == std::find(destination.begin(), destination.end(), index)){
+            destination.push_back(index);
+            recursive_search(index, type, destination);
+        }
+    }
+    
+    return;
 }
 
 bool PuzzleField::isCanMove(connectedPuto& _puto, VECTOR N){
     PosIndex origin_index = convertPosIndex(_puto.getOriginPuto()->getPosition());
     PosIndex opt_index;
     
-    puto* origin;
-    puto* opt;
+    puto* origin = nullptr;
+    puto* opt = nullptr;
     
     switch (_puto.getOptPos()) {
         case VECTOR::UP:
@@ -381,26 +390,34 @@ bool PuzzleField::isCanMove(connectedPuto& _puto, VECTOR N){
         return false;
     }
     
-    switch (N) {
-        case VECTOR::UP:
-            origin = getPutoMapCell(PosIndex(origin_index.x,origin_index.y+1));
-            opt = getPutoMapCell(PosIndex(opt_index.x,opt_index.y+1));
-            break;
-        case VECTOR::RIGHT:
-            origin = getPutoMapCell(PosIndex(origin_index.x+1,origin_index.y));
-            opt = getPutoMapCell(PosIndex(opt_index.x+1,opt_index.y));
-            break;
-        case VECTOR::DOWN:
-            origin = getPutoMapCell(PosIndex(origin_index.x,origin_index.y-1));
-            opt = getPutoMapCell(PosIndex(opt_index.x,opt_index.y-1));
-            break;
-        case VECTOR::LEFT:
-            origin = getPutoMapCell(PosIndex(origin_index.x-1,origin_index.y));
-            opt = getPutoMapCell(PosIndex(opt_index.x-1,opt_index.y));
-            break;
-        default:
-            break;
-
+    try{
+        
+        switch (N) {
+            case VECTOR::UP:
+                origin = getPutoMapCell(PosIndex(origin_index.x,origin_index.y+1));
+                opt = getPutoMapCell(PosIndex(opt_index.x,opt_index.y+1));
+                break;
+            case VECTOR::RIGHT:
+                origin = getPutoMapCell(PosIndex(origin_index.x+1,origin_index.y));
+                opt = getPutoMapCell(PosIndex(opt_index.x+1,opt_index.y));
+                break;
+            case VECTOR::DOWN:
+                origin = getPutoMapCell(PosIndex(origin_index.x,origin_index.y-1));
+                opt = getPutoMapCell(PosIndex(opt_index.x,opt_index.y-1));
+                break;
+            case VECTOR::LEFT:
+                origin = getPutoMapCell(PosIndex(origin_index.x-1,origin_index.y));
+                opt = getPutoMapCell(PosIndex(opt_index.x-1,opt_index.y));
+                break;
+            default:
+                break;
+                
+        }
+        
+    }
+    
+    catch(void* ptr){
+        return false;
     }
     
     if(!origin && !opt){
@@ -408,4 +425,13 @@ bool PuzzleField::isCanMove(connectedPuto& _puto, VECTOR N){
     }
     
     return false;
+}
+
+bool PuzzleField::isLive(){
+    for(int i=0;i<WIDTH_PUTO_NUM;i++){
+        if(_putoMap[HEIGHT_PUTO_NUM-1][i] != nullptr){
+            return false;
+        }
+    }
+    return true;
 }

@@ -39,7 +39,7 @@ struct PosIndex{
     
     int x,y;
     
-    bool operator==(const PosIndex&& rhs);
+    bool operator==(const PosIndex& rhs);
     PosIndex operator+(const PosIndex&& rhs);
     PosIndex operator-(const PosIndex&& rhs);
     PosIndex operator*(int rhs);

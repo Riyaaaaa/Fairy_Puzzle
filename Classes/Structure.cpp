@@ -8,7 +8,7 @@
 
 #include "Structure.h"
 
-bool PosIndex::operator==(const PosIndex&& rhs){
+bool PosIndex::operator==(const PosIndex& rhs){
     return x == rhs.x && y == rhs.y;
 }
 

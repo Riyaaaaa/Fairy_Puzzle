@@ -22,19 +22,13 @@ void connectedPuto::progress(int movement){
 
 }
 
-bool connectedPuto::newPuto(puto::TYPE originType,puto::TYPE optType){
-    Size visibleSize = Director::getInstance()->getVisibleSize();
+bool connectedPuto::initPuto(puto* origin,puto* opt){
     
-    _origin = puto::create(originType);
-    _opt = puto::create(optType);
-    
-    _origin->setScale(_puto_size.width / _origin->getContentSize().width);
-    _opt->setScale(_puto_size.width / _opt->getContentSize().width);
-    
-    _owner->addChild(_origin,Z_PUTO,TAG_ORIGIN);
-    _owner->addChild(_opt,Z_PUTO,TAG_OPT);
+    _origin = origin;
+    _opt = opt;
     
     OPT_POSITION = VECTOR::UP;
+    return true;
 }
 
 void connectedPuto::moveDelta(cocos2d::Vec2 delta){

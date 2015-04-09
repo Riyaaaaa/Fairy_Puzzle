@@ -45,7 +45,7 @@ public:
     puto* getOriginPuto  (){return _origin;};
     puto* getOptionalPuto(){return _opt;};
     
-    bool newPuto(puto::TYPE,puto::TYPE);
+    bool initPuto(puto*,puto*);
     
     void getSemaphore    (){_semaphore=false;}
     void releaceSemaphore(){_semaphore=true;};

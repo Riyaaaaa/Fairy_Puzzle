@@ -37,7 +37,6 @@ bool GameScene::init()
     _distribution=std::uniform_int_distribution<>(1,5);
     
     initWindow();
-    initPutoList();
     
     schedule(schedule_selector(GameScene::progress),_progressDelay);
     
@@ -49,9 +48,12 @@ bool GameScene::initWindow(){
     Vec2 origin = Director::getInstance()->getVisibleOrigin();
     
     Size mainWindowSize(550,1000);
+    std::array<puto::TYPE, HEIGHT_PUTO_NUM> typeList;
+    
+    for(int i=0;i<HEIGHT_PUTO_NUM;i++)typeList[i] = static_cast<puto::TYPE>(_distribution(_engine));
     
     Sprite* player = Sprite::create("Alice.png");
-    _mainWindow = PuzzleField::create(mainWindowSize);
+    _mainWindow = PuzzleField::create(mainWindowSize,typeList);
     _mainWindow->setOpacity(0.0);
  
         //drawPolygon(points data,point num,color,outline size,outline color)
@@ -65,20 +67,7 @@ bool GameScene::initWindow(){
     return true;
 }
 
-bool GameScene::initPutoList(){
-    int _type;
-    
-    for(int i=0;i<HEIGHT_PUTO_NUM;i++){
-        _type = _distribution(_engine);
-        next_puto_list.push_back(std::pair<Sprite*,puto::TYPE>(Sprite::create("drop" + std::to_string(_type) + ".png"),
-                                                               static_cast<puto::TYPE>(_type)));
-        next_puto_list.back().first->setScale(90 / next_puto_list.back().first->getContentSize().width);
-        next_puto_list.back().first->setPosition(Vec2(605,90*i +45));
-        addChild(next_puto_list.back().first,NEXT_DROP+i);
-    }
-    
-    return true;
-}
+
 
 void GameScene::onEnter(){
     /*Size visibleSize = Director::getInstance()->getVisibleSize();
@@ -94,8 +83,8 @@ void GameScene::progress(float frame){
             _mainWindow->progress();
             break;
         case STATUS::WAITING:
-            _mainWindow->pushNewPuto(static_cast<puto::TYPE>(_distribution(_engine)),
-                                     static_cast<puto::TYPE>(_distribution(_engine)));
+            _mainWindow->pushPuto(static_cast<puto::TYPE>(_distribution(_engine)),
+                                static_cast<puto::TYPE>(_distribution(_engine)));
             break;
         case STATUS::ACTING:
             break;
@@ -110,5 +99,4 @@ void GameScene::progress(float frame){
             break;
     }
 }
-
 

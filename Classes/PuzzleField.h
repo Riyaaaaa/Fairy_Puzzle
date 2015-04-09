@@ -16,22 +16,31 @@
 
 class PuzzleField : public cocos2d::DrawNode{
 public:
-    void pushNewPuto(puto::TYPE,puto::TYPE);    //basically, plz call while _status is WAITING. this set instance to  _mainPuto
+    void pushPuto(puto::TYPE,puto::TYPE);
+    puto* createPuto(puto::TYPE);    //basically, plz call while _status is WAITING. this set instance to  _mainPuto
+    
+    void popPuto();
+    
     void progress();                            //game progress
     void progressWithMovement(int);             //fall processing
     
-    virtual bool init(cocos2d::Size); //initialize by window size
-    static PuzzleField* create(cocos2d::Size);
+    virtual bool init(cocos2d::Size,std::array<puto::TYPE,HEIGHT_PUTO_NUM>); //initialize by window size
+    bool initPutoList(std::array<puto::TYPE,HEIGHT_PUTO_NUM>);
     
-    bool isPutoContain(puto*);
+    static PuzzleField* create(cocos2d::Size,std::array<puto::TYPE,HEIGHT_PUTO_NUM>);
+    
+    bool isLive();
     
     puto* getPutoMapCell(PosIndex);
     void setPutoPosIndex(puto*,PosIndex);
     
     void rotate(VECTOR);
     
-    bool isCanMove(puto*,VECTOR);
+    //bool isCanMove(puto*,VECTOR);
     bool isCanMove(connectedPuto&,VECTOR);
+    
+    cocos2d::Size getPutoSize(){return cocos2d::Size(_window_size.width/WIDTH_PUTO_NUM,
+                                                     _window_size.height/HEIGHT_PUTO_NUM);};
     
     enum class STATUS{  //express status of game
         WAITING=0,      //_mainPuto is null
@@ -63,6 +72,7 @@ protected:
     int _movement     =-20; //movement of puto per frame
     
     std::array<std::array<puto*,WIDTH_PUTO_NUM>,HEIGHT_PUTO_NUM> _putoMap; //puto list
+    std::deque<puto*> next_puto_list;
     
     connectedPuto _mainPuto; //puto falling
     
@@ -71,6 +81,7 @@ protected:
     VECTOR SWIPE_PARAM;
     
     void removePuto();
+    void recursive_search(PosIndex,puto::TYPE,std::vector<PosIndex>&);
 
 };
 

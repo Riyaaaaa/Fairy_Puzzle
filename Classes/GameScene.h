@@ -30,7 +30,6 @@ protected:
     PuzzleField* _mainWindow;
     
     bool initWindow();
-    bool initPutoList();
     
     void progress            (float);
     void progressWithMovement(float);
@@ -44,8 +43,6 @@ protected:
     float _progressDelay= 0.75f;
     
     const int TAG_ORIGIN=0,TAG_OPT=1;
-    
-    std::deque<std::pair<cocos2d::Sprite*,puto::TYPE>> next_puto_list;
     
 };
 
