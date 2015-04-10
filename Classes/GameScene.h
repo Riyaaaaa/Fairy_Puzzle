@@ -27,7 +27,7 @@ protected:
     GameScene() = default;
     virtual ~GameScene() = default;
 
-    PuzzleField* _mainWindow;
+    std::vector<PuzzleField*> _window_list;
     
     bool initWindow();
     

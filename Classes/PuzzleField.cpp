@@ -29,14 +29,24 @@ PuzzleField* PuzzleField::create(Size window_size,std::array<puto::TYPE,HEIGHT_P
 bool PuzzleField::init(Size window_size,std::array<puto::TYPE,HEIGHT_PUTO_NUM> typeList){
     if(!DrawNode::init())return false;
     
-    Vec2 vecs[]={Vec2(window_size),Vec2(0,window_size.height),Vec2(0,0),Vec2(window_size.width,0)};
     const int SQUARE_POINT_NUM=4;
     
-    _window_size = window_size;
+    _puto_size = Size(window_size.width/(WIDTH_PUTO_NUM+1),window_size.height/HEIGHT_PUTO_NUM);
+    _window_size = Size(window_size.width-_puto_size.width,window_size.height);
     
+    Sprite* sprite = Sprite::create("Alice.png");
+    sprite->setScale(_window_size.width/sprite->getContentSize().width,
+                     _window_size.height/sprite->getContentSize().height);
+    sprite->setAnchorPoint(Vec2(0,0));
+    sprite->setPosition(Vec2(0,0));
+    sprite->setOpacity(128);
+    
+    addChild(sprite,Z_BACKGROUND);
+    
+    Vec2 vecs[]={Vec2(_window_size),Vec2(0,_window_size.height),Vec2(0,0),Vec2(_window_size.width,0)};
     drawPolygon(&vecs[0], SQUARE_POINT_NUM, Color4F(.5f, .6f, 1.0f, 0.5f), 1, Color4F::BLACK);
     
-    setContentSize(Size(640,_window_size.height));
+    setContentSize(Size(window_size.width,window_size.height));
     
     _status = STATUS::WAITING;
     
@@ -74,10 +84,16 @@ bool PuzzleField::initPutoList(std::array<puto::TYPE,HEIGHT_PUTO_NUM> typeList){
 }
 
 bool PuzzleField::onTouchBegan(cocos2d::Touch* touch,cocos2d::Event* unused_event){
-    _stdPos = touch->getLocation();
-    SWIPE_PARAM = VECTOR::NONE;
+    Rect targetBox = this->getBoundingBox();
+     _stdPos = touch->getLocation();
     
-    return true;
+    if (targetBox.containsPoint(_stdPos))
+    {
+        SWIPE_PARAM = VECTOR::NONE;
+        return true;
+    }
+    
+    return false;
 }
 
 void PuzzleField::onTouchMoved(cocos2d::Touch* touch,cocos2d::Event* unused_event){
@@ -125,6 +141,8 @@ void PuzzleField::popPuto(){
     auto move_up = MoveBy::create(0.5f, Vec2(0,getPutoSize().height));
     auto move_left = MoveBy::create(0.5f, Vec2(-getPutoSize().width,0));
     auto move_down = MoveBy::create(0.5f, Vec2(0,-getPutoSize().height));
+    
+    CCLOG("%f",getPutoSize().width);
     
     _status = STATUS::ACTING;
     
@@ -184,14 +202,21 @@ void PuzzleField::fallPuto(puto* target){
     _status = STATUS::ACTING;
     
     for(int i = 0 ; i <= index.y + 1 ; i++){
-        if(getPutoMapCell(PosIndex(index.x , i)) == nullptr){
+        if(index.y == i){
             setPutoPosIndex(target,PosIndex(index.x , i));
-            _status = STATUS::WAITING;
+            SpriteFallFinished();
+            break;
+        }
+        if(getPutoMapCell(PosIndex(index.x , i)) == nullptr){
+            setPutoPosIndexWithAnimation(target,PosIndex(index.x , i));
             break;
         }
     }
-    
+}
+
+void PuzzleField::SpriteFallFinished(){
     removePuto();
+    _status = STATUS::WAITING;
     if(!isLive()){
         _status = STATUS::LOSED;
         _eventDispatcher->setEnabled(false);
@@ -221,9 +246,18 @@ void PuzzleField::patchGravity(){
 }
 
 void PuzzleField::setPutoPosIndex(puto* target,PosIndex index){
-    CCLOG("%d %d",WIDTH_PUTO_NUM,HEIGHT_PUTO_NUM);
     target->setPosition(Vec2(static_cast<int>(index.x) * _window_size.width/WIDTH_PUTO_NUM,
                              static_cast<int>(index.y) * _window_size.height/HEIGHT_PUTO_NUM));
+    _putoMap[index.y][index.x] = target;
+}
+
+void PuzzleField::setPutoPosIndexWithAnimation(puto* target,PosIndex index){
+    Vec2 pos = Vec2(static_cast<int>(index.x) * _window_size.width/WIDTH_PUTO_NUM,
+                    static_cast<int>(index.y) * _window_size.height/HEIGHT_PUTO_NUM);
+    auto move = MoveTo::create(0.5f, pos);
+    auto callback = CallFunc::create(CC_CALLBACK_0(PuzzleField::SpriteFallFinished, this));
+    
+    target->runAction(Sequence::create(move,callback,nullptr));
     _putoMap[index.y][index.x] = target;
 }
 

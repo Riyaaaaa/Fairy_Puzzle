@@ -11,10 +11,10 @@ Scene* GameScene::createScene()
     
     // 'layer' is an autorelease object
     auto layer = GameScene::create();
-
+    
     // add layer as a child to scene
     scene->addChild(layer);
-
+    
     // return the scene
     return scene;
 }
@@ -47,22 +47,26 @@ bool GameScene::initWindow(){
     Size visibleSize = Director::getInstance()->getVisibleSize();
     Vec2 origin = Director::getInstance()->getVisibleOrigin();
     
-    Size mainWindowSize(550,1000);
+    Size mainWindowSize(320,500);
     std::array<puto::TYPE, HEIGHT_PUTO_NUM> typeList;
     
     for(int i=0;i<HEIGHT_PUTO_NUM;i++)typeList[i] = static_cast<puto::TYPE>(_distribution(_engine));
     
-    Sprite* player = Sprite::create("Alice.png");
-    _mainWindow = PuzzleField::create(mainWindowSize,typeList);
-    _mainWindow->setOpacity(0.0);
- 
-        //drawPolygon(points data,point num,color,outline size,outline color)
+    //Sprite* player = Sprite::create("Alice.png");
+    _window_list.push_back(PuzzleField::create(mainWindowSize,typeList));
+    addChild(_window_list.back());
+
+    _window_list.push_back(PuzzleField::create(mainWindowSize,typeList));
+    _window_list.back()->setPosition(Vec2(mainWindowSize.width,0));
+    addChild(_window_list.back());
     
-    player->setAnchorPoint(Vec2(0,0));
-    player->setPosition(Vec2(0,0));
+    _window_list.push_back(PuzzleField::create(mainWindowSize,typeList));
+    _window_list.back()->setPosition(Vec2(0,mainWindowSize.height+50));
+    addChild(_window_list.back());
     
-    player->addChild(_mainWindow,WINDOW);
-    addChild(player);
+    _window_list.push_back(PuzzleField::create(mainWindowSize,typeList));
+    _window_list.back()->setPosition(Vec2(mainWindowSize.width,mainWindowSize.height+50));
+    addChild(_window_list.back());
     
     return true;
 }
@@ -71,32 +75,34 @@ bool GameScene::initWindow(){
 
 void GameScene::onEnter(){
     /*Size visibleSize = Director::getInstance()->getVisibleSize();
-    Vec2 origin = Director::getInstance()->getVisibleOrigin();*/
+     Vec2 origin = Director::getInstance()->getVisibleOrigin();*/
     Layer::onEnter();
 }
 
 
 void GameScene::progress(float frame){
     
-    switch (_mainWindow->getStatus()) {
-        case STATUS::PLAYING:
-            _mainWindow->progress();
-            break;
-        case STATUS::WAITING:
-            _mainWindow->pushPuto(static_cast<puto::TYPE>(_distribution(_engine)),
-                                static_cast<puto::TYPE>(_distribution(_engine)));
-            break;
-        case STATUS::ACTING:
-            break;
-        case STATUS::LOSED:
-            //TODO:
-            break;
-        case STATUS::WON:
-            //TODO;
-            break;
-            
-        default:
-            break;
+    for(auto Window: _window_list){
+        switch (Window->getStatus()) {
+            case STATUS::PLAYING:
+                Window->progress();
+                break;
+            case STATUS::WAITING:
+                Window->pushPuto(static_cast<puto::TYPE>(_distribution(_engine)),
+                                      static_cast<puto::TYPE>(_distribution(_engine)));
+                break;
+            case STATUS::ACTING:
+                break;
+            case STATUS::LOSED:
+                //TODO:
+                break;
+            case STATUS::WON:
+                //TODO;
+                break;
+                
+            default:
+                break;
+        }
     }
 }
 

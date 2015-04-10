@@ -33,14 +33,14 @@ public:
     
     puto* getPutoMapCell(PosIndex);
     void setPutoPosIndex(puto*,PosIndex);
+    void setPutoPosIndexWithAnimation(puto*,PosIndex);
     
     void rotate(VECTOR);
     
     //bool isCanMove(puto*,VECTOR);
     bool isCanMove(connectedPuto&,VECTOR);
     
-    cocos2d::Size getPutoSize(){return cocos2d::Size(_window_size.width/WIDTH_PUTO_NUM,
-                                                     _window_size.height/HEIGHT_PUTO_NUM);};
+    cocos2d::Size getPutoSize(){return _puto_size;};
     
     enum class STATUS{  //express status of game
         WAITING=0,      //_mainPuto is null
@@ -57,6 +57,7 @@ protected:
     virtual ~PuzzleField() = default;
     
     cocos2d::Size _window_size;
+    cocos2d::Size _puto_size;
     
     PosIndex convertPosIndex(cocos2d::Vec2); //Vec2 -> PosIndex
     
@@ -82,6 +83,8 @@ protected:
     
     void removePuto();
     void recursive_search(PosIndex,puto::TYPE,std::vector<PosIndex>&);
+    
+    void SpriteFallFinished();
 
 };
 

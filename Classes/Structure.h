@@ -22,9 +22,9 @@ enum class VECTOR{ //scoped enumeration
 };
 
 enum ZOrder{
-    Z_WINDOW=0,
+    Z_BACKGROUND,
+    Z_WINDOW,
     Z_PUTO,
-    
 };
 
 enum tag{
